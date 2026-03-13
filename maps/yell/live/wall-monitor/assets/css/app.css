@@ -1,0 +1,317 @@
+/* ==========================================================================
+   YELL Wall Monitor — app.css
+   4-panel grid layout. Replaces slideshow-based stylesheet.
+
+   Layout:
+     Top-left:     Park Alerts
+     Top-right:    Road Conditions (iframe)
+     Bottom-left:  Current Weather
+     Bottom-right: Visitor Center Information
+
+   Sizing uses viewport units (vw/vh) throughout so the layout scales
+   correctly across 43", 49", and 75" display sizes.
+   ========================================================================== */
+
+
+/* --- Base ---------------------------------------------------------------- */
+
+html,
+body {
+    background-color: #0a0a0a;
+    color: #fff;
+    cursor: none !important;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    width: 100%;
+    font-family: "Gill Sans", "Gill Sans MT", "Myriad Pro", "DejaVu Sans Condensed", Helvetica, Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+
+/* --- Grid Wrapper -------------------------------------------------------- */
+
+#grid-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+
+    /* Outer breathing room — space around all four edges */
+    padding: 2.2vh 2.2vw;
+
+    /* Gap between the two rows */
+    gap: 1.8vh;
+}
+
+
+/* --- Rows ---------------------------------------------------------------- */
+
+.grid-row {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0; /* Required: prevents flex children from overflowing */
+
+    /* Gap between the two panels within each row */
+    gap: 1.8vw;
+}
+
+/* Top row is taller than the bottom row to give the map more vertical space */
+#row-top {
+    flex: 1.4;
+}
+
+
+/* --- Panels -------------------------------------------------------------- */
+
+.grid-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+
+    /* Inner breathing room — space between panel edge and content */
+    padding: 2.4vh 2.8vw;
+
+    /* Subtle panel container */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+
+/* --- Panel Labels -------------------------------------------------------- */
+
+.panel-label {
+    font-size: 1.1vw;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 1.6vh;
+    flex-shrink: 0;
+
+    /* Separator line under label */
+    padding-bottom: 1.2vh;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+/* --- Panel Content ------------------------------------------------------- */
+
+.panel-content {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+
+/* --- Alerts Panel -------------------------------------------------------- */
+
+.alert-item {
+    margin-bottom: 2.2vh;
+    padding-bottom: 2.2vh;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.alert-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.alert-category {
+    font-size: 1vw;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 200, 80, 0.85); /* warm amber — caution tone */
+    margin-bottom: 0.5vh;
+}
+
+.alert-title {
+    font-size: 2.4vw;
+    font-weight: bold;
+    line-height: 2.8vw;
+    margin-bottom: 0.6vh;
+}
+
+.alert-description {
+    font-size: 1.7vw;
+    line-height: 2.3vw;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+
+/* --- Roads Map Panel ----------------------------------------------------- */
+
+#map-content {
+    height: 100%;
+    width: 100%;
+}
+
+#roads-map {
+    border: none;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+/* --- Weather Panel ------------------------------------------------------- */
+
+/* Reduced side padding to give weather cards more horizontal room */
+#panel-weather {
+    padding: 1.2vh 2.8vw;
+}
+
+#weather-content {
+    height: 100%;
+    width: 100%;
+}
+
+.weather-cards {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: stretch;
+    height: 100%;
+    gap: 0.9vw;
+    padding: 1vh 0.6vw;
+}
+
+.weather-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 1.5vh 0.8vw;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.04);
+    min-width: 0;
+}
+
+.weather-period-name {
+    font-size: 1vw;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 1);
+    height: 2.8em;
+    margin-bottom: 1.25vh;
+    line-height: 1.3;
+}
+
+.weather-icon {
+    width: 60%;
+    max-width: 80px;
+    height: auto;
+    margin-bottom: 0.8vh;
+}
+
+.weather-temp {
+    font-size: 1.8vw;
+    font-weight: bold;
+    margin-bottom: 0.5vh;
+    line-height: 1;
+}
+
+.weather-desc {
+    font-size: 0.9vw;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+
+/* --- Messages Panel ------------------------------------------------------ */
+
+.message-item {
+    font-size: 2.6vw;
+    line-height: 3.4vw;
+    margin-bottom: 2.8vh;
+}
+
+.message-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Support for images embedded via markdown in YELL Live messages */
+.message-item img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+
+/* --- Cycle Indicator Dots (shared by alerts and messages panels) --------- */
+
+/* To adjust dot size or spacing, change width/height/gap below */
+#messages-dots,
+#alerts-dots {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding-top: 1.2vh;
+    flex-shrink: 0;
+}
+
+.message-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    transition: background 0.3s;
+}
+
+.message-dot.active {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+
+/* --- Utility / States ---------------------------------------------------- */
+
+.placeholder-text {
+    font-size: 1.8vw;
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    margin: 0;
+}
+
+.no-content {
+    font-size: 1.8vw;
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    margin: 0;
+}
+
+
+/* --- Legacy: kept for DOI compatibility, not used in grid layout --------- */
+
+.container-fluid,
+.row,
+.slider,
+.slick-slider,
+.slick-list,
+.slick-track {
+    height: 100%;
+}
+
+.slick-slider {
+    margin-bottom: 0;
+}
+
+.message {
+    margin: 50px 100px;
+}
