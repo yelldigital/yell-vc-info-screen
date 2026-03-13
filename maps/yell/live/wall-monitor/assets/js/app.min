@@ -1,0 +1,366 @@
+/* ==========================================================================
+   YELL Wall Monitor — app.min.js
+   Replaces original app.min.js. Unminified for readability and DOI review.
+
+   Layout: 4-panel static grid
+     Top-left:     Park Alerts         (NPS Alerts API)
+     Top-right:    Road Conditions     (iframe, always visible)
+     Bottom-left:  Current Weather     (NWS API, location-specific)
+     Bottom-right: Visitor Center Info (YELL Live custom messages)
+
+   All panels load on page ready and refresh every 5 minutes.
+   Alerts and messages cycle every 18 seconds if there are multiple items.
+   The road map iframe loads once and is never reloaded — this prevents the
+   loading spinner bug that occurred in the previous slideshow-based layout.
+
+   To add a new visitor center:
+     1. Add its npmap_id and weather config to config.weather below
+     2. Add its npmap_id to youAreHereMap in the roads map app.min.js
+   ========================================================================== */
+
+
+// ---------------------------------------------------------------------------
+// Configuration
+// To change refresh intervals or add visitor centers, edit this section only.
+// ---------------------------------------------------------------------------
+
+var config = {
+
+    // How often to refresh all data panels, in milliseconds.
+    // Default: every 5 minutes.
+    dataRefreshInterval: 5 * 60 * 1000,
+
+    // YELL Live default npmap_id. Overridden via URL hash: index.html#key=ID
+    // Each visitor center has a unique key — see visitor center URLs below.
+    defaultKey: '7835242a-1be7-4303-b421-33635e278be5',
+
+    // NPS Alerts API key.
+    // Register for a free key at: https://developer.nps.gov/
+    // Replace the value below with your key string.
+    npsApiKey: 'Z2Xg3afng7gQPdfEinLbTqncKnSIY4IfeJECuNFy',
+
+    // NPS Alerts API endpoint. limit=5 returns the 5 most recent alerts.
+    // Increase the limit value if more alerts need to be displayed.
+    npsAlertsEndpoint: 'https://developer.nps.gov/api/v1/alerts?parkCode=yell&limit=5',
+
+    // Weather forecast URLs from api.weather.gov — no API key required.
+    // Each entry is keyed by the visitor center npmap_id.
+    // To add a location: find its NWS gridpoint at api.weather.gov/points/LAT,LNG
+    // and add an entry here with the returned forecast URL.
+    weather: {
+        // Albright Visitor Center (Mammoth Hot Springs)
+        '7835242a-1be7-4303-b421-33635e278be5': {
+            label: 'Current Weather \u2014 Mammoth Hot Springs',
+            url: 'https://api.weather.gov/gridpoints/RIW/51,207/forecast'
+        },
+        // Grant Visitor Center
+        'db52c6c7c3d4de64e1d0605f00dc2e52': {
+            label: 'Current Weather \u2014 Yellowstone Lake',
+            url: 'https://api.weather.gov/gridpoints/RIW/58,186/forecast'
+        },
+        // Canyon Visitor Education Center
+        '865e66fd2944ffa90d0bf5cc84d3d066': {
+            label: 'Current Weather \u2014 Canyon Village',
+            url: 'https://api.weather.gov/gridpoints/RIW/60,203/forecast'
+        },
+        // Old Faithful Visitor Education Center
+        'a3719f751fd4cd190ea2ea84b8e8b608': {
+            label: 'Current Weather \u2014 Old Faithful',
+            url: 'https://api.weather.gov/gridpoints/RIW/43,183/forecast'
+        },
+        // West Yellowstone Visitor Information Center
+        '0cb2b32ffdbd363ac82caa91760301cb': {
+            label: 'Current Weather \u2014 West Yellowstone',
+            url: 'https://api.weather.gov/gridpoints/TFX/87,11/forecast'
+        },
+        // Fishing Bridge Visitor Center (uses Yellowstone Lake gridpoint)
+        'd4da254f3b3fdba0a077894ba3381f71': {
+            label: 'Current Weather \u2014 Fishing Bridge',
+            url: 'https://api.weather.gov/gridpoints/RIW/58,186/forecast'
+        }
+    }
+
+};
+
+
+// ---------------------------------------------------------------------------
+// Utility: parse URL hash parameters
+// Preserved from original app.min.js for compatibility.
+// Example: index.html#key=abc123 sets hashes.key = 'abc123'
+// ---------------------------------------------------------------------------
+
+var getHashes = function (hash) {
+    var result = {};
+    var pairs = hash.substr(1).split('&');
+    for (var i = 0; i < pairs.length; i++) {
+        var parts = pairs[i].split('=');
+        if (parts.length === 2) {
+            result[parts[0]] = parts[1];
+        } else {
+            result[pairs[i]] = undefined;
+        }
+    }
+    return result;
+};
+
+var hashes  = getHashes(window.location.hash);
+var npMapId = hashes.key || config.defaultKey;
+
+
+// ---------------------------------------------------------------------------
+// Shared cycle timer
+// Alerts and messages panels advance simultaneously every 18 seconds.
+// To change the interval, update the value in startSharedCycle below.
+// ---------------------------------------------------------------------------
+
+var sharedCycleTimer = null;
+
+var startSharedCycle = function () {
+    if (sharedCycleTimer) {
+        clearInterval(sharedCycleTimer);
+    }
+    sharedCycleTimer = setInterval(function () {
+        if (messageData.length > 1) {
+            currentMessage = (currentMessage + 1) % messageData.length;
+            showMessage();
+        }
+        if (alertData.length > 1) {
+            currentAlert = (currentAlert + 1) % alertData.length;
+            showAlert();
+        }
+    }, 18 * 1000);
+};
+
+
+// ---------------------------------------------------------------------------
+// Messages Panel
+// Polls the YELL Live Carto SQL API for visitor center custom messages.
+// Messages are stored as HTML-formatted text and support markdown images.
+// ---------------------------------------------------------------------------
+
+var messageData    = [];
+var currentMessage = 0;
+
+var showMessage = function () {
+    if (messageData.length === 0) { return; }
+
+    var $content = $('#messages-content');
+    var $dots    = $('#messages-dots');
+
+    $content.html('<div class="message-item">' + messageData[currentMessage] + '</div>');
+
+    // Rebuild dot indicators
+    $dots.empty();
+    for (var i = 0; i < messageData.length; i++) {
+        $dots.append('<span class="message-dot' + (i === currentMessage ? ' active' : '') + '"></span>');
+    }
+};
+
+var loadMessages = function () {
+
+    var apiUrl = 'https://carto.nps.gov/user/nps-yell/api/v2/sql?callback=?'
+        + '&cb=' + (new Date()).getTime()
+        + "&q=SELECT * FROM visitor_center_messages"
+        + " WHERE archived=false AND displayed=true"
+        + " AND npmap_id='" + npMapId + "'";
+
+    $.getJSON(apiUrl, function (data) {
+
+        var $content = $('#messages-content');
+        var $dots    = $('#messages-dots');
+
+        if (data && data.rows && data.rows.length > 0) {
+            messageData = [];
+            $.each(data.rows, function (i, row) {
+                if (row.message) { messageData.push(row.message); }
+            });
+            currentMessage = 0;
+            showMessage();
+            startSharedCycle();
+        } else {
+            messageData = [];
+            $content.html('<p class="no-content">No current messages.</p>');
+            $dots.empty();
+        }
+
+    }).fail(function () {
+        messageData = [];
+        $('#messages-content').html('<p class="no-content">Messages temporarily unavailable.</p>');
+        $('#messages-dots').empty();
+    });
+
+};
+
+
+// ---------------------------------------------------------------------------
+// Alerts Panel
+// Fetches active NPS alerts for Yellowstone from the NPS API.
+// Requires a free API key — see config.npsApiKey above.
+// ---------------------------------------------------------------------------
+
+var alertData    = [];
+var currentAlert = 0;
+
+var showAlert = function () {
+    if (alertData.length === 0) { return; }
+
+    var $content = $('#alerts-content');
+    var $dots    = $('#alerts-dots');
+
+    $content.html(
+        '<div class="alert-item">'
+        + '<div class="alert-category">' + alertData[currentAlert].category + '</div>'
+        + '<div class="alert-title">' + alertData[currentAlert].title + '</div>'
+        // Adds a space after periods not followed by a space, to fix NPS data formatting
+        + '<div class="alert-description">' + alertData[currentAlert].description.replace(/\.([A-Z])/g, '. $1') + '</div>'
+        + '</div>'
+    );
+
+    // Rebuild dot indicators
+    $dots.empty();
+    for (var i = 0; i < alertData.length; i++) {
+        $dots.append('<span class="message-dot' + (i === currentAlert ? ' active' : '') + '"></span>');
+    }
+};
+
+var loadAlerts = function () {
+
+    var $content = $('#alerts-content');
+    var $dots    = $('#alerts-dots');
+
+    if (!config.npsApiKey) {
+        $content.html('<p class="no-content">Park alerts — NPS API key required.</p>');
+        return;
+    }
+
+    var apiUrl = config.npsAlertsEndpoint + '&api_key=' + config.npsApiKey;
+
+    $.getJSON(apiUrl, function (data) {
+
+        if (data && data.data && data.data.length > 0) {
+            alertData    = data.data;
+            currentAlert = 0;
+            showAlert();
+            startSharedCycle();
+        } else {
+            alertData = [];
+            $content.html('<p class="no-content">No active park alerts.</p>');
+            $dots.empty();
+        }
+
+    }).fail(function () {
+        alertData = [];
+        $content.html('<p class="no-content">Alerts temporarily unavailable.</p>');
+        $dots.empty();
+    });
+
+};
+
+
+// ---------------------------------------------------------------------------
+// Weather Panel
+// Fetches forecast from the NWS API (api.weather.gov) — no key required.
+// Displays 4 forecast periods: today, tonight, tomorrow, and the next day.
+// Night periods (except Tonight) are filtered out for cleaner display.
+// Panel label updates dynamically to show the visitor center location name.
+// ---------------------------------------------------------------------------
+
+// Abbreviates NWS period names for compact display in weather cards.
+// To change how a period name appears, update the replacements below.
+var abbreviatePeriodName = function (name) {
+    return name
+        .replace('This Afternoon', 'Today')
+        .replace('This Morning',   'Today')
+        .replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) Night$/, function(match, day) {
+            return day.substring(0, 3) + ' Night';
+        });
+};
+
+var loadWeather = function () {
+
+    var $content = $('#weather-content');
+    var $label   = $('#weather-label');
+
+    var weatherConfig = config.weather[npMapId];
+
+    if (!weatherConfig) {
+        $label.text('Current Weather');
+        $content.html('<p class="no-content">No weather source configured for this location.</p>');
+        return;
+    }
+
+    $label.text(weatherConfig.label);
+
+    $.ajax({
+        url: weatherConfig.url,
+        method: 'GET',
+        success: function (data) {
+
+            $content.empty();
+
+            if (!data || !data.properties || !data.properties.periods) {
+                $content.html('<p class="no-content">Forecast data unavailable.</p>');
+                return;
+            }
+
+            // Show daytime periods plus Tonight only — filters out overnight periods
+            // that would otherwise push the next day off screen.
+            var periods = data.properties.periods.filter(function(p) {
+                return p.isDaytime || p.name === 'Tonight';
+            }).slice(0, 4);
+
+            var $cards = $('<div class="weather-cards"></div>');
+
+            $.each(periods, function (i, period) {
+                $cards.append(
+                    '<div class="weather-card">'
+                    + '<div class="weather-period-name">' + abbreviatePeriodName(period.name) + '</div>'
+                    + '<img class="weather-icon" src="' + period.icon + '" alt="' + period.shortForecast + '">'
+                    + '<div class="weather-temp">' + period.temperature + '&deg;' + period.temperatureUnit + '</div>'
+                    + '<div class="weather-desc">' + period.shortForecast + '</div>'
+                    + '</div>'
+                );
+            });
+
+            $content.append($cards);
+
+        },
+        error: function () {
+            $content.html('<p class="no-content">Forecast temporarily unavailable.</p>');
+        }
+    });
+
+};
+
+
+// ---------------------------------------------------------------------------
+// Refresh all data panels
+// Called on page load and on the recurring data refresh interval.
+// The roads map iframe is intentionally NOT refreshed here — it loads once
+// and stays loaded, which prevents the map initialization/loading bug.
+// ---------------------------------------------------------------------------
+
+var refreshAll = function () {
+    loadMessages();
+    loadAlerts();
+    loadWeather();
+};
+
+
+// ---------------------------------------------------------------------------
+// Initialize on DOM ready
+// ---------------------------------------------------------------------------
+
+$(document).ready(function () {
+
+    // Set the roads map iframe src, passing the visitor center key as a query
+    // parameter so the map can highlight the current location.
+    $('#roads-map').attr('src', 'https://yelldigital.github.io/yell-vc-info-screen/kiosk/maps/roads/dev.html?key=' + npMapId);
+
+    // Load all data panels immediately
+    refreshAll();
+
+    // Then refresh on the configured interval (default: every 5 minutes)
+    setInterval(refreshAll, config.dataRefreshInterval);
+
+});
