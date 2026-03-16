@@ -158,6 +158,9 @@ body {
 #map-content {
     height: 100%;
     width: 100%;
+    margin: -2.4vh -2.8vw;
+    width: calc(100% + 5.6vw);
+    height: calc(100% + 4.8vh);
 }
 
 #roads-map {
