@@ -151,9 +151,16 @@ body {
 
 /* --- Roads Map Panel ----------------------------------------------------- */
 
+#panel-map {
+    position: relative;
+}
+
 #map-content {
-    height: 100%;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 #roads-map {
