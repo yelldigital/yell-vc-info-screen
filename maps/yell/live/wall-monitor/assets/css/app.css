@@ -151,8 +151,8 @@ body {
 
 #panel-alerts {
     flex: 1 1 0;
-    width: 50%;
-    max-width: 50%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 /* --- Roads Map Panel ----------------------------------------------------- */
@@ -173,8 +173,7 @@ body {
     padding: 0;
     flex: 1 1 0;
     min-width: 0;
-    width: 50%;
-    max-width: 50%;
+    overflow: hidden;
 }
 
 /* --- Weather Panel ------------------------------------------------------- */
