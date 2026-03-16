@@ -151,6 +151,10 @@ body {
 
 /* --- Roads Map Panel ----------------------------------------------------- */
 
+#panel-map {
+    padding: 0;
+}
+
 #map-content {
     height: 100%;
     width: 100%;
