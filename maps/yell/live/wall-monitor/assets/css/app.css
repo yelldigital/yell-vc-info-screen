@@ -149,12 +149,18 @@ body {
     color: rgba(255, 255, 255, 0.75);
 }
 
-
 /* --- Roads Map Panel ----------------------------------------------------- */
 
+#panel-map {
+    position: relative;
+}
+
 #map-content {
-    height: 100%;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 #roads-map {
@@ -163,7 +169,6 @@ body {
     height: 100%;
     display: block;
 }
-
 
 /* --- Weather Panel ------------------------------------------------------- */
 
@@ -239,73 +244,6 @@ body {
     font-size: 2.6vw;
     line-height: 3.4vw;
     margin-bottom: 2.8vh;
-}
-
-/* --- Geyser Predictions Table (Albright VC only) ------------------------- */
-
-/* Outer container — fills the message-item space */
-.geyser-table {
-    width: 100%;
-}
-
-/* Shared row layout — name takes more space, offset takes less */
-.geyser-header-row,
-.geyser-data-row {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
-    width: 100%;
-}
-
-.geyser-header-row {
-    padding-bottom: 0.8vh;
-    margin-bottom: 0.6vh;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.geyser-data-row {
-    padding: 0.7vh 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.geyser-data-row:last-child {
-    border-bottom: none;
-}
-
-/* Column widths */
-.geyser-col-name   { flex: 2.2; }
-.geyser-col-date   { flex: 1.6; }
-.geyser-col-time   { flex: 2.0; }
-.geyser-col-offset { flex: 1.8; text-align: right; }
-
-/* Header row text */
-.geyser-header-row .geyser-col-name,
-.geyser-header-row .geyser-col-date,
-.geyser-header-row .geyser-col-time,
-.geyser-header-row .geyser-col-offset {
-    font-size: 0.95vw;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.4);
-}
-
-/* Data row text — sized to feel integrated with other message cards */
-.geyser-data-row .geyser-col-name {
-    font-size: 1.7vw;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 1);
-}
-
-.geyser-data-row .geyser-col-date,
-.geyser-data-row .geyser-col-time {
-    font-size: 1.7vw;
-    color: rgba(255, 255, 255, 0.85);
-}
-
-.geyser-data-row .geyser-col-offset {
-    font-size: 1.4vw;
-    color: rgba(255, 255, 255, 0.5);
 }
 
 .message-item:last-child {
