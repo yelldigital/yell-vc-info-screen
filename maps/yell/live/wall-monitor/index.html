@@ -55,12 +55,6 @@
     </div><!-- /grid-wrapper -->
 
     <script>
-      // Force the map iframe to load a fresh version (bypasses cache)
-      const map = document.getElementById('roads-map');
-      if (map && map.src) {
-        map.src = map.src.split('?')[0] + '?t=' + Date.now();
-      }
-
       // Reload the entire page every 5 minutes to keep all content current
       setTimeout(() => location.reload(), 5 * 60 * 1000);
     </script>
