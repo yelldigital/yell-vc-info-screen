@@ -13,12 +13,9 @@
     <script src="assets/js/app.min.js"></script>
   </head>
   <body>
-
     <div id="grid-wrapper">
-
       <!-- Top row: Park Alerts + Road Conditions -->
       <div class="grid-row" id="row-top">
-
         <!-- Top-left: NPS Park Alerts (cycles if multiple) -->
         <div class="grid-panel" id="panel-alerts">
           <div class="panel-label">Park Alerts</div>
@@ -27,7 +24,6 @@
           </div>
           <div id="alerts-dots"></div>
         </div>
-
         <!-- Top-right: Road Conditions Map (iframe, always visible) -->
         <div class="grid-panel" id="panel-map">
           <div class="panel-content" id="map-content">
@@ -37,12 +33,9 @@
           </iframe>
           </div>
         </div>
-
       </div><!-- /top row -->
-
       <!-- Bottom row: Current Weather + Visitor Center Information -->
       <div class="grid-row">
-
         <!-- Bottom-left: Current Weather (NWS API, location-specific) -->
         <div class="grid-panel" id="panel-weather">
           <div class="panel-label" id="weather-label">Current Weather</div>
@@ -50,7 +43,6 @@
             <p class="placeholder-text">Loading forecast&hellip;</p>
           </div>
         </div>
-
         <!-- Bottom-right: Visitor Center Information (YELL Live, cycles if multiple) -->
         <div class="grid-panel" id="panel-messages">
           <div class="panel-label">Visitor Center Information</div>
@@ -59,10 +51,18 @@
           </div>
           <div id="messages-dots"></div>
         </div>
-
       </div><!-- /bottom row -->
-
     </div><!-- /grid-wrapper -->
 
+    <script>
+      // Force the map iframe to load a fresh version (bypasses cache)
+      const map = document.getElementById('roads-map');
+      if (map && map.src) {
+        map.src = map.src.split('?')[0] + '?t=' + Date.now();
+      }
+
+      // Reload the entire page every 5 minutes to keep all content current
+      setTimeout(() => location.reload(), 5 * 60 * 1000);
+    </script>
   </body>
 </html>
